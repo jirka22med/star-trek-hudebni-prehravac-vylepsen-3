@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+ <html lang="cs">
+ <link rel="icon" href="https://img41.rajce.idnes.cz/d4102/19/19244/19244630_db82ad174937335b1a151341387b7af2/images/image_82x82.jpg?ver=1" type="image/png">
+
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Star Trek: Hudební Přehravač</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="miniPlayer.css">  
+  <link rel="stylesheet" href="loadingScreen.css">  
+  <link rel="stylesheet" href="casovac.css"> 
+  <link rel="stylesheet" href="tone-meter-star-trek-hudebni-prehravac.css">  
+       
+</head>
+<body>
+    
+ <div class="player-content-wrapper">
+        
+    
+     
+  <div class="background-image-container">
+   <img src="">
+  </div>
+  
+  
+    
+     <audio id="audioPlayer">
+    <source id="audioSource" src="" type="audio/mpeg">
+</audio>
+
+
+  <div class="player-container">
+       
+      <h1 class="header-title" id="nazev-prehravace" >STAR TREK: HUDEBNÍ PŘEHRAVAČ</h1>
+    <h2 id="trackTitle">Vyberte skladbu</h2>
+      
+      
+      <div class="time-controls" id="progres-bar-time-part" >
+        <span id="currentTime" style="display:inline-block;padding:2px;background:#000;border:2px solid #C00000;color:#fff;margin:0;">
+         <span class="time-part" style="color: white;">00</span><span class="time-separator" style="color: white;">:</span><span class="time-part" style="color: white;">00</span><span class="time-separator" style="color: white;">:</span><span class="time-part" style="color: white;">00</span>
+        </span>
+        <input type="range" id="progress-bar" min="0" max="100" value="0" style="display:inline-block;padding:2px;background:#000;border:2px solid #C00000;color:#fff;margin:0;">
+        <span id="duration" style="display:inline-block;padding:2px;background:#000;border:2px solid #C00000;color:#fff;margin:0;">
+          <span class="time-part" style="color: white;">00</span><span class="time-separator" style="color: white;">:</span><span class="time-part" style="color: white;">00</span><span class="time-separator" style="color: white;">:</span><span class="time-part" style="color: white;">00</span>
+        </span>
+      </div>
+      
+     <!-- obal/pouzdro-->
+      <div id="control-panel" >
+           <!-- hl kontejner tlačítek -->
+        <div class="controls">
+            <!-- Mám nastaveno v buttonVisibilityManager.js-->
+          <button id="prev-button" title="Předchozí (Šipka vlevo)"  >◀️⬅️</button> 
+            <!-- Mám nastaveno v buttonVisibilityManager.js-->
+          <button id="play-button" title="Přehrát (Mezerník/P)"   >🚀</button>
+            <!-- Mám nastaveno v buttonVisibilityManager.js-->
+          <button id="pause-button" title="Pauza (Mezerník/P)"  >🖖⏸️</button>
+        <!-- Mám nastaveno v buttonVisibilityManager.js-->
+          <button id="next-button" title="Další (Šipka vpravo)"  >▶️➡️</button>
+            <!-- Mám nastaveno v buttonVisibilityManager.js-->
+          <button id="loop-button" title="Opakovat (L)"  >🔁</button>
+            <!-- Mám nastaveno v buttonVisibilityManager.js-->
+          <button id="shuffle-button" title="Náhodně (Vypnuto)"  >🔀</button>
+            <!-- Mám nastaveno v buttonVisibilityManager.js-->
+          <button id="reset-button" title="Restartovat skladbu (R)"  >🔄</button>
+            <!-- Mám nastaveno v buttonVisibilityManager.js-->
+          <button id="fullscreen-toggle" title="Celá obrazovka (F)"  >⛶</button>
+            <!-- Mám nastaveno v buttonVisibilityManager.js-->
+          <button id="toggle-info-button" title="Zobrazit/Skrýt klávesové zkratky"   >📋</button>
+            <!-- Mám nastaveno v buttonVisibilityManager.js-->
+          <button id="reload-button" title="Obnovit stránku"  >🔄</button>
+            <!-- Mám nastaveno v buttonVisibilityManager.js-->
+          <button id="toggle-playlist-button" title="Zobrazit/Skrýt playlist"  >📜</button> 
+            <!-- Mám nastaveno v buttonVisibilityManager.js-->
+          <button id="timer-button" title="Časovač vypnutí (T)"  >⏰</button>
+            <!-- Mám nastaveno v buttonVisibilityManager.js-->
+          <button id="clearAllDataBtn" onclick="window.clearAllAudioPlayerData()"  >🗑️</button>
+            <!-- Mám nastaveno v buttonVisibilityManager.js-->
+          <button id="perf-monitor-btn">🔍📊</button>
+            <!-- Mám nastaveno v buttonVisibilityManager.js-->
+           <button id="jirik-manual-opener-btn"  >🧾</button>  
+            <!-- Mám nastaveno v buttonVisibilityManager.js-->
+          <button id="mini-mode-float">🖼️ Float</button>
+            <!-- Mám nastaveno v buttonVisibilityManager.js-->
+<button id="mini-mode-pip">📺 PiP</button>
+            <!-- Mám nastaveno v buttonVisibilityManager.js-->
+<button id="mini-mode-popup">🪟 Popup</button>
+ 
+            
+    <!-- budu nastavovat v buttonVisibilityManager.js-->        
+  <!-- Jednoduché PTT tlačítko -->
+<button class="voice-ptt-trigger" id="voice-commands-help">V</button> 
+<button class="control-button" onclick="window.voiceController.showHelp()" title="Zobrazit hlasové příkazy (Manuál)" id="zobrazeni-manualu">📋</button>          
+ <button id="debug-manager-button">🛠️ DIAGNOSTIKA</button>  
+ <button id="bluetooth-monitor-toggle">🛠️ </button>           
+            
+             
+        </div>
+       
+          
+        <div class="volume-controls" id="volume-sider-nastaveni-hlasitosti" >
+          <button id="mute-button" title="Ztlumit (M)">🔊</button>
+          <input type="range" id="volume-slider" min="0" max="1" step="0.01" value="0.1" title="Hlasitost (A/D)">
+          <span id="volume-value">10</span>
+        </div>
+      </div>
+      <div class="performance-mode" id="perfMode">⚡ VARIANTA B</div>
+      <div id="search-container" class="search-container">
+    <div class="search-input-wrapper" >
+        <input  
+            type="text" 
+            id="search-input" 
+            class="search-input" 
+            placeholder="🔍 Hledat skladbu... (Ctrl+F)"
+            autocomplete="off"
+        />
+        <button id="clear-search" class="clear-search-button" style="display: none;">✖</button>
+    </div>
+    <div id="search-counter" class="search-counter" style="display: none;"></div>
+    <div id="search-results" class="search-results" style="display: none;"></div>
+</div>
+
+      <div class="playlist" id="playlist" style="display: block; "> 
+          
+           
+   
+
+  
+      </div>
+    </div> 
+    <div class="hlavni-kontejner-pro-cas-a-casovac" id="digitalni-hodini-datum" >
+  <div class="time-calendar-wrapper" >
+    <div class="time">
+      <div class="time-colon"><div class="time-text"><span class="num hours">00</span><span class="text">H</span></div></div>
+      <span class="colon">:</span>
+      <div class="time-colon"><div class="time-text"><span class="num minutes">00</span><span class="text">M</span></div></div>
+      <span class="colon">:</span>
+      <div class="time-colon"><div class="time-text"><span class="num seconds">00</span><span class="text">S</span></div></div>
+    </div>
+    <div class="calendar"><div class="date" id="currentDate"></div></div>
+  </div>
+
+  <div class="timer-container" id="timer-container">
+    <div class="timer-display">
+      <span id="timer-minutes">15</span>:<span id="timer-seconds">00</span>
+    </div>
+    
+    <div class="timer-controls">
+      <!-- Start/Stop tlačítka -->
+      <button id="timer-start">▶️ Start</button>
+      <button id="timer-stop">⏹️ Stop</button>
+      
+      <!-- Časovač 1-10 minut -->
+      <button id="timer-1">1️⃣ 1 min</button>
+      <button id="timer-2">2️⃣ 2 min</button>
+      <button id="timer-3">3️⃣ 3 min</button>
+      <button id="timer-4">4️⃣ 4 min</button>
+      <button id="timer-5">5️⃣ 5 min</button>
+      <button id="timer-6">6️⃣ 6 min</button>
+      <button id="timer-7">7️⃣ 7 min</button>
+      <button id="timer-8">8️⃣ 8 min</button>
+      <button id="timer-9">9️⃣ 9 min</button>
+      <button id="timer-10">🔟 10 min</button>
+      
+      <!-- Časovač 11-20 minut -->
+      <button id="timer-11">1️⃣1️⃣ 11 min</button>
+      <button id="timer-12">1️⃣2️⃣ 12 min</button>
+      <button id="timer-13">1️⃣3️⃣ 13 min</button>
+      <button id="timer-14">1️⃣4️⃣ 14 min</button>
+      <button id="timer-15">1️⃣5️⃣ 15 min</button>
+      <button id="timer-16">1️⃣6️⃣ 16 min</button>
+      <button id="timer-17">1️⃣7️⃣ 17 min</button>
+      <button id="timer-18">1️⃣8️⃣ 18 min</button>
+      <button id="timer-19">1️⃣9️⃣ 19 min</button>
+      <button id="timer-20">2️⃣0️⃣ 20 min</button>
+      
+      <!-- Časovač 21-30 minut -->
+      <button id="timer-21">2️⃣1️⃣ 21 min</button>
+      <button id="timer-22">2️⃣2️⃣ 22 min</button>
+      <button id="timer-23">2️⃣3️⃣ 23 min</button>
+      <button id="timer-24">2️⃣4️⃣ 24 min</button>
+      <button id="timer-25">2️⃣5️⃣ 25 min</button>
+      <button id="timer-26">2️⃣6️⃣ 26 min</button>
+      <button id="timer-27">2️⃣7️⃣ 27 min</button>
+      <button id="timer-28">2️⃣8️⃣ 28 min</button>
+      <button id="timer-29">2️⃣9️⃣ 29 min</button>
+      <button id="timer-30">3️⃣0️⃣ 30 min</button>
+      
+      <!-- Bonusové časovače (pokud chceš) -->
+      <button id="timer-60">6️⃣0️⃣ 60 min</button>
+    </div>
+</div>
+</div>
+        <!-- Mám nastaveno v buttonVisibilityManager.js >> pouze jen id popisky to mi skrývá celý tento blok až po <canvas id="waveform-canvas"></canvas> -->
+       <div class="keyboard-container">
+        <div id="popisky"> 
+         <div class="tone-meter-container" style="display:inline-block;padding:2px;background:#000;border:2px solid #C00000;color:#fff;margin:0;">
+        
+        <div class="tone-meter-title">
+            🎵 TONE.METER ENHANCED 🎵
+        </div>
+        
+        <div class="tone-meter-status inactive" id="statusIndicator">
+            ⏹️ PŘIPRAVEN K TESTOVÁNÍ
+        </div>
+        
+        <!-- KALIBRACE A4 -->
+        <div class="tone-meter-calibration">
+            <h3>🎼 KALIBRACE A4 FREKVENCE</h3>
+            
+            <div class="tone-meter-a4-control">
+                <span style="color: #ccc;">A4 =</span>
+                <input type="number" min="400" max="580" value="440" class="tone-meter-a4-input" id="a4FreqInput">
+                <span style="color: #ccc;">Hz</span>
+                <button class="tone-meter-a4-reset" id="resetA4Btn">Reset</button>
+            </div>
+            
+            <div class="tone-meter-calibration-info">
+                Standardní A4 = 440 Hz | Barokní A4 = 415 Hz | Moderní A4 = 442-444 Hz
+            </div>
+        </div>
+        
+        <!-- SEKCE PRO OVLÁDÁNÍ MIKROFONU -->
+        <div class="tone-meter-mic-controls">
+            <h3>🎚️ NASTAVENÍ MIKROFONU</h3>
+            
+            <div class="tone-meter-slider-group">
+                <div class="tone-meter-slider-label">
+                    <span>HLASITOST VSTUPU</span>
+                    <span id="inputVolumeValue">100%</span>
+                </div>
+                <input type="range" min="0" max="10000" value="100" class="tone-meter-slider" id="inputVolumeSlider">
+                <div style="font-size: 10px; color: #888; text-align: center; margin-top: 2px;">0% - 10000% (Extrémní zesílení)</div>
+            </div>
+            
+            <div class="tone-meter-slider-group">
+                <div class="tone-meter-slider-label">
+                    <span>BOOST MIKROFONU</span>
+                    <span id="micBoostValue">1.0x</span>
+                </div>
+                <input type="range" min="10" max="10000" value="100" class="tone-meter-slider" id="micBoostSlider">
+                <div style="font-size: 10px; color: #888; text-align: center; margin-top: 2px;">0.1x - 1000.0x (Pro slabé signály)</div>
+            </div>
+            
+            <div class="tone-meter-calibration-info" id="micCalibrationInfo">
+                Automatická kalibrace citlivosti se spustí po startu měření
+            </div>
+        </div>
+        
+        <!-- NOVÝ: VIZUÁLNÍ TUNER -->
+        <div class="tone-meter-tuner">
+            
+            
+            <div class="tone-meter-tuner-display">
+                <div class="tone-meter-current-note" id="tunerNote">---</div>
+                
+                <div class="tone-meter-tuner-needle-container">
+                    <div class="tone-meter-tuner-scale">
+                        <!-- Stupnice -50 až +50 centů -->
+                        <div class="tone-meter-scale-mark" style="left: 10%;"></div>
+                        <div class="tone-meter-scale-mark" style="left: 20%;"></div>
+                        <div class="tone-meter-scale-mark" style="left: 30%;"></div>
+                        <div class="tone-meter-scale-mark" style="left: 40%;"></div>
+                        <div class="tone-meter-scale-mark major center" style="left: 50%;"></div>
+                        <div class="tone-meter-scale-mark" style="left: 60%;"></div>
+                        <div class="tone-meter-scale-mark" style="left: 70%;"></div>
+                        <div class="tone-meter-scale-mark" style="left: 80%;"></div>
+                        <div class="tone-meter-scale-mark" style="left: 90%;"></div>
+                    </div>
+                    <div class="tone-meter-tuner-needle" id="tunerNeedle"></div>
+                </div>
+                
+                <div class="tone-meter-cent-display">
+                    <span style="color: #6666ff;">♭ FLAT</span>
+                    <div class="tone-meter-cent-value" id="centValue">0¢</div>
+                    <span style="color: #ff6666;">SHARP ♯</span>
+                </div>
+                
+                <div class="tone-meter-frequency-diff" id="frequencyDiff">
+                    Cílová frekvence: --- Hz
+                </div>
+            </div>
+        </div>
+        
+        <div class="tone-meter-controls">
+            <button class="tone-meter-btn" id="startBtn">🎤 START</button>
+            <button class="tone-meter-btn" id="stopBtn" disabled>⏹️ STOP</button>
+            <button class="tone-meter-btn calibrate" id="calibrateBtn" disabled>🔧 KALIBRACE</button>
+        </div>
+        
+        <div class="tone-meter-display">
+            <div class="tone-meter-info">
+                <div class="tone-meter-label">HLASITOST</div>
+                <div class="tone-meter-value" id="volumeValue">0%</div>
+            </div>
+            <div class="tone-meter-info">
+                <div class="tone-meter-label">FREKVENCE</div>
+                <div class="tone-meter-value" id="frequencyValue">0 Hz</div>
+            </div>
+            <div class="tone-meter-info">
+                <div class="tone-meter-label">NOTA</div>
+                <div class="tone-meter-value" id="noteValue">---</div>
+            </div>
+        </div>
+        
+        <canvas class="tone-meter-visualizer" id="visualizerCanvas"></canvas>
+    </div>
+<div id="waveform-container">
+    <canvas id="waveform-canvas"></canvas>
+</div>
+      
+      <div id="notification"></div>
+      <div class="fade-indicator">  
+       </div>
+    <footer>
+      &copy; <span id="currentYear"  ></span> Star Trek: Hudební Přehravač | Vytvořeno s láskou ke Star Treku
+    </footer>
+          
+  </div> </div> </div> 
+    <!-- ============================================ -->
+<!-- KRITICKÉ SKRIPTY - NESMÍ MÍT DEFER! -->
+<!-- Musí se načíst SYNCHRONNĚ v tomto pořadí -->
+<!-- ============================================ -->
+
+<!-- Firebase SDK - musí být PŘED audioFirebaseFunctions.js -->
+<script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore-compat.js"></script>
+
+    
+ <script src="audioFirebaseFunctions.js"></script>    
+<!-- Hlavní přehrávač - inicializuje globální proměnné (window.tracks, window.favorites) -->
+ 
+    
+<script src="DebugManager.js"></script>
+<!-- Data playlistu - naplňuje window.tracks -->
+ <script src="script.js"></script>
+
+<!-- Cloud synchronizace - poskytuje API pro ostatní moduly -->
+ 
+    
+ <script src="myPlaylist.js"></script> 
+<!-- ============================================ -->
+<!-- FEATURE MODULY - MŮŽOU MÍT DEFER -->
+<!-- Tyto skripty se načtou paralelně a spustí po DOM ready -->
+<!-- ============================================ -->
+
+<!-- Performance monitoring -->
+<script src="universalni-perfomens-monitor.js" defer></script>
+
+<!-- Debug wrapper -->
+<!-- <script src="jirkuv-hlidac.js" defer></script> -->
+
+<!-- Audio vizualizace / Tone Meter -->
+<script src="audiou-vizuace.js" defer></script>
+
+<!-- Notifikační systém -->
+<script src="notificationFix.js" defer></script>
+
+<!-- Automatické přechody mezi skladbami -->
+<script src="autoFade.js" defer></script>
+
+<!-- Hlasové ovládání -->
+<script src="voiceControl.js" defer></script>
+
+ <script src="pocitac.js" defer></script>
+<!-- Nastavení vzhledu playlistu -->
+<script src="playlistSettings.js" defer></script>
+
+<!-- Pokročilá správa skladeb (CRUD operace) -->
+<script src="pokrocila-sprava-playlistu.js" defer></script>
+
+<!-- Detekce odpojení Bluetooth a kabelových sluchátek/reproduktorů -->
+<script src="bluetoothDisconnectMonitor.js" defer></script>
+
+<!-- Správa viditelnosti tlačítek -->
+<script src="buttonVisibilityManager.js" defer></script>
+
+<!-- Vyhledávač skladeb -->
+<script src="vyhledavac-skladeb.js" defer></script>
+
+<!-- UI management - finalizace rozhraní (měl by být poslední) -->
+<script src="sprava-rozhrani.js" defer></script>
+    
+    <!-- Plovoucí okno mini Přehravače -->
+    <script src="miniPlayer.js" defer></script>
+   <!-- <script src="loadingScreen.js" defer></script> -->
+</body>
+</html>
+
+
+
+

@@ -1,0 +1,266 @@
+/* ============================================ */
+/* 🖖 STAR TREK ČASOVAČ - SJEDNOCENÝ STYL */
+/* Více admirál Jiřík & Admirál Claude.AI */
+/* ============================================ */
+
+/* --- Hlavní kontejner časovače --- */
+.timer-container {
+    display: none; /* Skrytý dokud není aktivován */
+    flex-direction: column;
+    align-items: center;
+    margin: var(--spacing-md, 20px) 0;
+    padding: var(--spacing-md, 20px);
+    
+    /* Star Trek LCARS design */
+    background: linear-gradient(135deg, rgba(27, 38, 59, 0.95) 0%, rgba(15, 52, 96, 0.9) 100%);
+    border-radius: 15px;
+    border: 2px solid var(--accent-color, #ff6b35);
+    
+    /* Rozměry */
+    width: 100%;
+    max-width: 900px;
+    
+    /* Efekty */
+    box-shadow: 
+        var(--glow-effect, 0 0 20px rgba(255, 107, 53, 0.3)),
+        0 8px 32px rgba(0, 0, 0, 0.4);
+    
+    /* Animace při zobrazení */
+    animation: timerFadeIn 0.4s ease-in-out;
+}
+
+@keyframes timerFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* --- Displej časovače --- */
+.timer-display {
+    font-size: 2rem;
+    font-weight: bold;
+    color: var(--accent-color, #ff6b35);
+    
+    /* Pozadí displeje */
+    background: linear-gradient(90deg, rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.7));
+    
+    padding: 12px 24px;
+    border-radius: 8px;
+    margin-bottom: var(--spacing-md, 20px);
+    
+    /* LCARS border efekt */
+    border: 2px solid var(--accent-color, #ff6b35);
+    box-shadow: 
+        inset 0 0 10px rgba(255, 107, 53, 0.2),
+        0 0 15px rgba(255, 107, 53, 0.4);
+    
+    /* Monospace font pro digitální look */
+    font-family: 'Courier New', monospace;
+    letter-spacing: 3px;
+    
+    /* Animace blikání při běhu */
+    transition: all 0.3s ease;
+}
+
+.timer-display.running {
+    animation: timerPulse 1s ease-in-out infinite;
+}
+
+@keyframes timerPulse {
+    0%, 100% {
+        box-shadow: 
+            inset 0 0 10px rgba(255, 107, 53, 0.2),
+            0 0 15px rgba(255, 107, 53, 0.4);
+    }
+    50% {
+        box-shadow: 
+            inset 0 0 15px rgba(255, 107, 53, 0.4),
+            0 0 25px rgba(255, 107, 53, 0.6);
+    }
+}
+
+/* --- Grid tlačítek časovače --- */
+.timer-controls {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+    gap: 12px;
+    padding: 15px;
+    width: 100%;
+    max-width: 800px;
+    justify-items: center;
+}
+
+/* Responzivní breakpointy */
+@media (max-width: 768px) {
+    .timer-controls {
+        grid-template-columns: repeat(auto-fit, minmax(70px, 1fr));
+        gap: 8px;
+        padding: 10px;
+    }
+}
+
+@media (max-width: 480px) {
+    .timer-controls {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 6px;
+    }
+}
+
+/* --- Základní styl tlačítek --- */
+.timer-controls button {
+    /* Rozměry */
+    padding: 12px 16px;
+    min-width: 85px;
+    
+    /* Typography */
+    font-size: 1rem;
+    font-weight: bold;
+    color: white;
+    
+    /* LCARS gradient pozadí */
+    background: linear-gradient(135deg, #ff6b35 0%, #cc5522 100%);
+    
+    /* Borders & Radius */
+    border: 2px solid rgba(255, 107, 53, 0.5);
+    border-radius: 10px;
+    
+    /* Cursor */
+    cursor: pointer;
+    
+    /* Přechody */
+    transition: all 0.3s ease;
+    
+    /* Shadows */
+    box-shadow: 0 4px 12px rgba(255, 107, 53, 0.3);
+    
+    /* Text shadow pro lepší čitelnost */
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+}
+
+/* --- Hover efekt --- */
+.timer-controls button:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(255, 107, 53, 0.5);
+    border-color: var(--accent-color, #ff6b35);
+    background: linear-gradient(135deg, #ff8c55 0%, #ee6642 100%);
+}
+
+/* --- Active/Pressed stav --- */
+.timer-controls button:active {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(255, 107, 53, 0.4);
+}
+
+/* --- Focus pro přístupnost --- */
+.timer-controls button:focus {
+    outline: 3px solid rgba(255, 107, 53, 0.6);
+    outline-offset: 2px;
+}
+
+/* --- Disabled stav --- */
+.timer-controls button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none !important;
+    box-shadow: none !important;
+}
+
+/* --- START tlačítko (zelené) --- */
+#timer-start {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    border-color: rgba(40, 167, 69, 0.5);
+    box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+}
+
+#timer-start:hover {
+    background: linear-gradient(135deg, #48c765 0%, #40e9b7 100%);
+    box-shadow: 0 6px 20px rgba(40, 167, 69, 0.5);
+    border-color: #28a745;
+}
+
+/* --- STOP tlačítko (červené) --- */
+#timer-stop {
+    background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+    border-color: rgba(220, 53, 69, 0.5);
+    box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
+}
+
+#timer-stop:hover {
+    background: linear-gradient(135deg, #fc5565 0%, #e84353 100%);
+    box-shadow: 0 6px 20px rgba(220, 53, 69, 0.5);
+    border-color: #dc3545;
+}
+
+/* --- Aktivní časovač tlačítko --- */
+.timer-controls button.active {
+    background: linear-gradient(135deg, #ffcc00 0%, #ff9900 100%);
+    border-color: #ffcc00;
+    box-shadow: 
+        0 0 20px rgba(255, 204, 0, 0.6),
+        inset 0 0 10px rgba(255, 255, 255, 0.3);
+    animation: activeTimerGlow 1s ease-in-out infinite;
+}
+
+@keyframes activeTimerGlow {
+    0%, 100% {
+        box-shadow: 
+            0 0 20px rgba(255, 204, 0, 0.6),
+            inset 0 0 10px rgba(255, 255, 255, 0.3);
+    }
+    50% {
+        box-shadow: 
+            0 0 30px rgba(255, 204, 0, 0.8),
+            inset 0 0 15px rgba(255, 255, 255, 0.5);
+    }
+}
+
+/* --- Speciální tlačítka (60 min, atd.) --- */
+#timer-60 {
+    background: linear-gradient(135deg, #9c27b0 0%, #7b1fa2 100%);
+    border-color: rgba(156, 39, 176, 0.5);
+    box-shadow: 0 4px 12px rgba(156, 39, 176, 0.3);
+}
+
+#timer-60:hover {
+    background: linear-gradient(135deg, #bc47d0 0%, #9b3fc2 100%);
+    box-shadow: 0 6px 20px rgba(156, 39, 176, 0.5);
+    border-color: #9c27b0;
+}
+
+/* --- Mobile optimalizace --- */
+@media (max-width: 480px) {
+    .timer-display {
+        font-size: 1.5rem;
+        padding: 8px 16px;
+    }
+    
+    .timer-controls button {
+        padding: 8px 12px;
+        font-size: 0.9rem;
+        min-width: 65px;
+    }
+    
+    .timer-container {
+        padding: 15px;
+    }
+}
+
+/* --- CSS Variables pro snadnou customizaci --- */
+:root {
+    --timer-accent: #ff6b35;
+    --timer-bg-dark: rgba(27, 38, 59, 0.95);
+    --timer-bg-light: rgba(15, 52, 96, 0.9);
+    --timer-success: #28a745;
+    --timer-danger: #dc3545;
+    --timer-warning: #ffcc00;
+    --timer-purple: #9c27b0;
+}
+
+/* ============================================ */
+/* 🖖 KONEC SJEDNOCENÉHO STYLU */
+/* ============================================ */

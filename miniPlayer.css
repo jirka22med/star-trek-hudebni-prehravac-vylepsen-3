@@ -1,0 +1,382 @@
+/**
+ * miniPlayer.css - Styly pro plovoucí mini přehrávač
+ * Star Trek LCARS Theme
+ */
+
+.mini-player-container {
+    position: fixed;
+    right: 20px;
+    bottom: 20px;
+    width: 320px;
+    height: 180px;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    border: 2px solid #ff9500;
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(255, 149, 0, 0.3), 
+                0 0 20px rgba(0, 174, 239, 0.2);
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    backdrop-filter: blur(10px);
+    font-family: 'Courier New', monospace;
+}
+
+.mini-player-container.hidden {
+    display: none !important;
+}
+
+.mini-player-container.pinned {
+    cursor: not-allowed;
+}
+
+.mini-player-container:hover {
+    box-shadow: 0 12px 40px rgba(255, 149, 0, 0.4), 
+                0 0 30px rgba(0, 174, 239, 0.3);
+    border-color: #00aeef;
+}
+
+/* Header */
+.mini-player-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    background: linear-gradient(90deg, #ff9500 0%, #ff6b00 100%);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    min-height: 36px;
+}
+
+.mini-player-drag-handle {
+    cursor: grab;
+    padding: 4px 8px;
+    color: #1a1a2e;
+    font-weight: bold;
+    user-select: none;
+    display: flex;
+    align-items: center;
+}
+
+.mini-player-container.pinned .mini-player-drag-handle {
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+.drag-icon {
+    font-size: 16px;
+    letter-spacing: -2px;
+}
+
+.mini-player-title {
+    flex: 1;
+    text-align: center;
+    font-weight: bold;
+    font-size: 13px;
+    color: #1a1a2e;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding: 0 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.mini-player-controls-header {
+    display: flex;
+    gap: 4px;
+}
+
+.mini-header-btn {
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+    width: 28px;
+    height: 28px;
+    cursor: pointer;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    color: #1a1a2e;
+}
+
+.mini-header-btn:hover {
+    background: rgba(0, 0, 0, 0.4);
+    border-color: rgba(255, 255, 255, 0.4);
+    transform: scale(1.1);
+}
+
+.mini-header-btn:active {
+    transform: scale(0.95);
+}
+
+/* Body */
+.mini-player-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 12px;
+    gap: 10px;
+    background: rgba(22, 33, 62, 0.8);
+}
+
+.mini-player-info {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.mini-time-display {
+    font-size: 14px;
+    color: #00aeef;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    text-shadow: 0 0 10px rgba(0, 174, 239, 0.6);
+}
+
+.time-separator {
+    color: #ff9500;
+    font-size: 12px;
+}
+
+/* Progress Bar */
+.mini-progress-container {
+    width: 100%;
+}
+
+.mini-progress-bar {
+    width: 100%;
+    height: 6px;
+    -webkit-appearance: none;
+    appearance: none;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+    outline: none;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.mini-progress-bar:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.mini-progress-bar::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 14px;
+    height: 14px;
+    background: linear-gradient(135deg, #ff9500 0%, #ff6b00 100%);
+    border: 2px solid #00aeef;
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 0 10px rgba(255, 149, 0, 0.6);
+    transition: all 0.2s;
+}
+
+.mini-progress-bar::-webkit-slider-thumb:hover {
+    transform: scale(1.2);
+    box-shadow: 0 0 15px rgba(255, 149, 0, 0.8);
+}
+
+.mini-progress-bar::-moz-range-thumb {
+    width: 14px;
+    height: 14px;
+    background: linear-gradient(135deg, #ff9500 0%, #ff6b00 100%);
+    border: 2px solid #00aeef;
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 0 10px rgba(255, 149, 0, 0.6);
+    transition: all 0.2s;
+}
+
+.mini-progress-bar::-moz-range-thumb:hover {
+    transform: scale(1.2);
+    box-shadow: 0 0 15px rgba(255, 149, 0, 0.8);
+}
+
+/* Controls */
+.mini-controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+}
+
+.mini-control-btn {
+    background: linear-gradient(135deg, #00aeef 0%, #0086b3 100%);
+    border: 2px solid rgba(255, 149, 0, 0.3);
+    border-radius: 6px;
+    width: 40px;
+    height: 40px;
+    cursor: pointer;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    color: white;
+    box-shadow: 0 2px 8px rgba(0, 174, 239, 0.3);
+}
+
+.mini-control-btn:hover {
+    background: linear-gradient(135deg, #ff9500 0%, #ff6b00 100%);
+    border-color: #00aeef;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 149, 0, 0.5);
+}
+
+.mini-control-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 6px rgba(0, 174, 239, 0.4);
+}
+
+.mini-control-btn.hidden {
+    display: none;
+}
+
+/* Play/Pause zvláštní styling */
+.mini-play-btn,
+.mini-pause-btn {
+    width: 48px;
+    height: 48px;
+    font-size: 20px;
+    background: linear-gradient(135deg, #ff9500 0%, #ff6b00 100%);
+    border-color: #00aeef;
+}
+
+.mini-play-btn:hover,
+.mini-pause-btn:hover {
+    background: linear-gradient(135deg, #00aeef 0%, #0086b3 100%);
+    border-color: #ff9500;
+}
+
+/* Resize Handle */
+.mini-player-resize-handle {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 20px;
+    height: 20px;
+    cursor: nwse-resize;
+    background: linear-gradient(135deg, transparent 50%, #ff9500 50%);
+    border-bottom-right-radius: 10px;
+    opacity: 0.6;
+    transition: opacity 0.2s;
+}
+
+.mini-player-resize-handle:hover {
+    opacity: 1;
+}
+
+.mini-player-container.pinned .mini-player-resize-handle {
+    display: none;
+}
+
+/* Toggle button v hlavním přehrávači */
+#toggle-mini-player {
+    position: relative;
+}
+
+#toggle-mini-player.active {
+    background: linear-gradient(135deg, #ff9500 0%, #ff6b00 100%);
+    border-color: #00aeef;
+    box-shadow: 0 0 15px rgba(255, 149, 0, 0.6);
+}
+
+#toggle-mini-player.active::after {
+    content: '';
+    position: absolute;
+    top: -3px;
+    right: -3px;
+    width: 8px;
+    height: 8px;
+    background: #00ff00;
+    border-radius: 50%;
+    box-shadow: 0 0 8px #00ff00;
+    animation: pulse-indicator 1.5s infinite;
+}
+
+@keyframes pulse-indicator {
+    0%, 100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.6;
+        transform: scale(1.2);
+    }
+}
+
+/* Responzivní design */
+@media (max-width: 768px) {
+    .mini-player-container {
+        width: 280px;
+        height: 160px;
+        right: 10px;
+        bottom: 10px;
+    }
+    
+    .mini-control-btn {
+        width: 36px;
+        height: 36px;
+        font-size: 14px;
+    }
+    
+    .mini-play-btn,
+    .mini-pause-btn {
+        width: 42px;
+        height: 42px;
+        font-size: 18px;
+    }
+    
+    .mini-player-title {
+        font-size: 11px;
+    }
+    
+    .mini-time-display {
+        font-size: 12px;
+    }
+}
+
+/* Animace při otevření */
+@keyframes slideInUp {
+    from {
+        transform: translateY(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.mini-player-container:not(.hidden) {
+    animation: slideInUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Glow efekt při hoveru */
+.mini-player-container:hover .mini-player-header {
+    box-shadow: 0 0 20px rgba(255, 149, 0, 0.4) inset;
+}
+
+/* Scrollbar styling (pokud by byl potřeba) */
+.mini-player-container::-webkit-scrollbar {
+    width: 6px;
+}
+
+.mini-player-container::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.mini-player-container::-webkit-scrollbar-thumb {
+    background: #ff9500;
+    border-radius: 3px;
+}
+
+.mini-player-container::-webkit-scrollbar-thumb:hover {
+    background: #00aeef;
+}

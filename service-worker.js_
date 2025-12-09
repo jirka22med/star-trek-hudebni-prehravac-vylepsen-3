@@ -1,0 +1,39 @@
+const CACHE_NAME = 'star-trek-voice-v1';
+const urlsToCache = [
+  '/',
+  '/index.html',
+  '/pocitac-ultimate.js',
+  '/icon-192.png',
+  '/icon-512.png'
+];
+
+// Instalace - uložení do cache
+self.addEventListener('install', (event) => {
+  event.waitUntil(
+    caches.open(CACHE_NAME)
+      .then((cache) => cache.addAll(urlsToCache))
+  );
+});
+
+// Fetch - vrácení z cache nebo sítě
+self.addEventListener('fetch', (event) => {
+  event.respondWith(
+    caches.match(event.request)
+      .then((response) => response || fetch(event.request))
+  );
+});
+
+// Update - smazání staré cache
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    caches.keys().then((cacheNames) => {
+      return Promise.all(
+        cacheNames.map((cacheName) => {
+          if (cacheName !== CACHE_NAME) {
+            return caches.delete(cacheName);
+          }
+        })
+      );
+    })
+  );
+});

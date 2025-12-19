@@ -29,7 +29,7 @@ class ToneMeter {
         this.microphonePermissionGranted = false;
         
         // NOVÉ: Kalibrace A4
-        this.a4Frequency = 580; // Standardní A4
+        this.a4Frequency = 2500; // Standardní A4
         
         // NOVÉ: Auto-kalibrace mikrofonu
         this.isCalibrating = false;
@@ -79,7 +79,7 @@ class ToneMeter {
 
     // NOVÉ: Nastavení A4 frekvence
     setA4Frequency(frequency) {
-        this.a4Frequency = Math.max(400, Math.min(580, frequency));
+        this.a4Frequency = Math.max(400, Math.min(2500, frequency));
         console.log('ToneMeter: A4 frekvence nastavena na', this.a4Frequency, 'Hz');
     }
 
@@ -730,3 +730,4 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
+

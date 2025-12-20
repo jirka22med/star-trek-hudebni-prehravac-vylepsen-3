@@ -731,3 +731,383 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
+/**
+ * ═══════════════════════════════════════════════════════════
+ * 📊 TONEMETER EXPORT MODULE - PRO MASTERING ANALÝZU
+ * ═══════════════════════════════════════════════════════════
+ * Vytvořil: Admirál Claude & Více Admirál Jiřík
+ * Účel: Export frekvenčních dat do CSV/JSON pro mastering
+ * Instalace: VLOŽ NA KONEC audiou-vizuace.js souboru!
+ * ═══════════════════════════════════════════════════════════
+ */
+
+// ─────────────────────────────────────────────────────────────
+// PŘIDEJ NOVÉ METODY DO TONEMETER CLASS
+// ─────────────────────────────────────────────────────────────
+
+/**
+ * Přidej tyto metody DO ToneMeter class (před poslední })
+ */
+
+// 1. ANALÝZA 8 PÁSEM (přidej do ToneMeter class)
+/*
+    analyzeBandPower(lowFreq, highFreq) {
+        if (!this.dataArray || !this.audioContext) return -60;
+        
+        const nyquist = this.audioContext.sampleRate / 2;
+        const binCount = this.dataArray.length;
+        
+        const lowBin = Math.floor((lowFreq / nyquist) * binCount);
+        const highBin = Math.ceil((highFreq / nyquist) * binCount);
+        
+        let sum = 0;
+        let count = 0;
+        
+        for (let i = lowBin; i < highBin && i < binCount; i++) {
+            sum += this.dataArray[i];
+            count++;
+        }
+        
+        if (count === 0) return -60;
+        
+        const avgValue = sum / count;
+        const normalized = avgValue / 255;
+        const dbValue = 20 * Math.log10(Math.max(normalized, 0.00001));
+        
+        return Math.round(dbValue * 10) / 10;
+    }
+
+    get8BandAnalysis() {
+        if (!this.isActive) {
+            console.warn('ToneMeter: Nelze analyzovat - není spuštěn.');
+            return null;
+        }
+        
+        this.analyserNode.getByteFrequencyData(this.dataArray);
+        
+        const bands = [
+            { name: 'Sub-Bass', freq: 40, low: 20, high: 60 },
+            { name: 'Bass', freq: 100, low: 60, high: 250 },
+            { name: 'Low-Mid', freq: 250, low: 250, high: 500 },
+            { name: 'Mid', freq: 800, low: 500, high: 2000 },
+            { name: 'High-Mid', freq: 2000, low: 2000, high: 4000 },
+            { name: 'Presence', freq: 5000, low: 4000, high: 8000 },
+            { name: 'Brilliance', freq: 10000, low: 8000, high: 14000 },
+            { name: 'Air', freq: 16000, low: 14000, high: 20000 }
+        ];
+        
+        const analysis = {
+            timestamp: new Date().toISOString(),
+            sampleRate: this.audioContext.sampleRate,
+            volume: this.currentVolume,
+            dominantFreq: this.dominantFrequency,
+            note: this.frequencyToNote(this.dominantFrequency),
+            bands: {}
+        };
+        
+        bands.forEach(band => {
+            const power = this.analyzeBandPower(band.low, band.high);
+            analysis.bands[band.name] = {
+                frequency: band.freq,
+                powerDB: power,
+                range: `${band.low}-${band.high} Hz`
+            };
+        });
+        
+        return analysis;
+    }
+
+    generateEQRecommendations(bandAnalysis) {
+        if (!bandAnalysis || !bandAnalysis.bands) return [];
+        
+        const recommendations = [];
+        const bandValues = Object.entries(bandAnalysis.bands).map(([name, data]) => ({
+            name,
+            power: data.powerDB
+        }));
+        
+        const avgPower = bandValues.reduce((sum, b) => sum + b.power, 0) / bandValues.length;
+        
+        bandValues.forEach(band => {
+            const diff = band.power - avgPower;
+            let suggestion = '';
+            let gainChange = 0;
+            
+            if (diff < -5) {
+                gainChange = 2.0;
+                suggestion = `+${gainChange} dB (slabé pásmo)`;
+            } else if (diff < -3) {
+                gainChange = 1.0;
+                suggestion = `+${gainChange} dB (pod průměrem)`;
+            } else if (diff > 5) {
+                gainChange = -1.5;
+                suggestion = `${gainChange} dB (příliš silné)`;
+            } else if (diff > 3) {
+                gainChange = -0.5;
+                suggestion = `${gainChange} dB (mírně silné)`;
+            } else {
+                gainChange = 0.0;
+                suggestion = '0.0 dB (OK)';
+            }
+            
+            recommendations.push({
+                band: band.name,
+                currentDB: band.power,
+                deviation: Math.round(diff * 10) / 10,
+                suggestion: suggestion,
+                gainChange: gainChange
+            });
+        });
+        
+        return recommendations;
+    }
+
+    exportToJSON() {
+        const analysis = this.get8BandAnalysis();
+        if (!analysis) return null;
+        
+        const recommendations = this.generateEQRecommendations(analysis);
+        
+        const exportData = {
+            metadata: {
+                exportTime: new Date().toISOString(),
+                analyzer: 'ToneMeter Enhanced',
+                version: '3.0',
+                sampleRate: analysis.sampleRate
+            },
+            current: {
+                volume: analysis.volume,
+                dominantFrequency: analysis.dominantFreq,
+                note: analysis.note
+            },
+            frequencyBands: analysis.bands,
+            eqRecommendations: recommendations
+        };
+        
+        return JSON.stringify(exportData, null, 2);
+    }
+
+    exportToCSV() {
+        const analysis = this.get8BandAnalysis();
+        if (!analysis) return null;
+        
+        const recommendations = this.generateEQRecommendations(analysis);
+        
+        let csv = 'Band,Frequency (Hz),Power (dB),Range,Deviation (dB),EQ Suggestion\n';
+        
+        recommendations.forEach(rec => {
+            const bandData = analysis.bands[rec.band];
+            csv += `${rec.band},${bandData.frequency},${rec.currentDB},"${bandData.range}",${rec.deviation},"${rec.suggestion}"\n`;
+        });
+        
+        return csv;
+    }
+
+    downloadJSON(filename = 'tonemeter_analysis.json') {
+        const data = this.exportToJSON();
+        if (!data) {
+            console.error('ToneMeter: Nelze exportovat - analyzátor není spuštěn.');
+            return;
+        }
+        
+        const blob = new Blob([data], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        console.log('ToneMeter: JSON export stažen:', filename);
+    }
+
+    downloadCSV(filename = 'tonemeter_analysis.csv') {
+        const data = this.exportToCSV();
+        if (!data) {
+            console.error('ToneMeter: Nelze exportovat - analyzátor není spuštěn.');
+            return;
+        }
+        
+        const blob = new Blob([data], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        console.log('ToneMeter: CSV export stažen:', filename);
+    }
+*/
+
+// ─────────────────────────────────────────────────────────────
+// UI TLAČÍTKA PRO EXPORT (přidej do HTML)
+// ─────────────────────────────────────────────────────────────
+
+/**
+ * PŘIDEJ DO HTML (tam kde máš ostatní tlačítka):
+ * 
+ * <div class="export-controls">
+ *     <h3>📊 Export Analýzy</h3>
+ *     <button id="exportJsonBtn" disabled>
+ *         📄 Export JSON
+ *     </button>
+ *     <button id="exportCsvBtn" disabled>
+ *         📊 Export CSV
+ *     </button>
+ *     <div id="exportStatus"></div>
+ * </div>
+ */
+
+// ─────────────────────────────────────────────────────────────
+// EVENT LISTENERS (přidej do DOMContentLoaded)
+// ─────────────────────────────────────────────────────────────
+
+/**
+ * PŘIDEJ DO document.addEventListener('DOMContentLoaded', ...) na konec:
+ */
+
+/*
+    // Export tlačítka
+    const exportJsonBtn = document.getElementById('exportJsonBtn');
+    const exportCsvBtn = document.getElementById('exportCsvBtn');
+    const exportStatus = document.getElementById('exportStatus');
+
+    if (exportJsonBtn) {
+        exportJsonBtn.addEventListener('click', function() {
+            if (toneMeter && toneMeter.isRunning()) {
+                const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+                toneMeter.downloadJSON(`star-trek-audio-analysis_${timestamp}.json`);
+                
+                if (exportStatus) {
+                    exportStatus.textContent = '✅ JSON exportován!';
+                    exportStatus.style.color = '#00ff88';
+                    setTimeout(() => { exportStatus.textContent = ''; }, 3000);
+                }
+            }
+        });
+    }
+
+    if (exportCsvBtn) {
+        exportCsvBtn.addEventListener('click', function() {
+            if (toneMeter && toneMeter.isRunning()) {
+                const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+                toneMeter.downloadCSV(`star-trek-audio-analysis_${timestamp}.csv`);
+                
+                if (exportStatus) {
+                    exportStatus.textContent = '✅ CSV exportován!';
+                    exportStatus.style.color = '#00ff88';
+                    setTimeout(() => { exportStatus.textContent = ''; }, 3000);
+                }
+            }
+        });
+    }
+
+    // Upravit start button - povolit export
+    // (Najdi původní start button listener a přidej na konec):
+    // exportJsonBtn.disabled = false;
+    // exportCsvBtn.disabled = false;
+
+    // Upravit stop button - zakázat export
+    // (Najdi původní stop button listener a přidej na konec):
+    // exportJsonBtn.disabled = true;
+    // exportCsvBtn.disabled = true;
+*/
+
+// ═══════════════════════════════════════════════════════════
+// 📋 KOMPLETNÍ INSTALAČNÍ INSTRUKCE
+// ═══════════════════════════════════════════════════════════
+
+console.log(`
+╔══════════════════════════════════════════════════════════╗
+║      📊 TONEMETER EXPORT MODULE - INSTALACE 📊          ║
+╚══════════════════════════════════════════════════════════╝
+
+🔧 KROK 1: PŘIDEJ METODY DO TONEMETER CLASS
+────────────────────────────────────────────────────────────
+Najdi v audiou-vizuace.js řádek:
+    isRunning() { return this.isActive; }
+    getVolume() { return this.currentVolume; }
+    ...
+}  <--- PŘED tímto }
+
+A VLOŽ všechny metody z komentáře /* ... */ výše
+(analyzeBandPower, get8BandAnalysis, generateEQRecommendations, 
+ exportToJSON, exportToCSV, downloadJSON, downloadCSV)
+
+────────────────────────────────────────────────────────────
+🔧 KROK 2: PŘIDEJ HTML TLAČÍTKA
+────────────────────────────────────────────────────────────
+Do HTML přidej:
+
+<div class="export-controls">
+    <h3>📊 Export Analýzy pro Mastering</h3>
+    <button id="exportJsonBtn" disabled>📄 Export JSON</button>
+    <button id="exportCsvBtn" disabled>📊 Export CSV</button>
+    <div id="exportStatus"></div>
+</div>
+
+────────────────────────────────────────────────────────────
+🔧 KROK 3: PŘIDEJ EVENT LISTENERS
+────────────────────────────────────────────────────────────
+Na KONEC document.addEventListener('DOMContentLoaded', ...) 
+přidej kód z komentáře výše (export button listeners)
+
+────────────────────────────────────────────────────────────
+🔧 KROK 4: AKTIVUJ TLAČÍTKA PŘI STARTU
+────────────────────────────────────────────────────────────
+Najdi v start button listeneru řádek:
+    DOM.calibrateBtn.disabled = false;
+
+A za něj přidej:
+    if (exportJsonBtn) exportJsonBtn.disabled = false;
+    if (exportCsvBtn) exportCsvBtn.disabled = false;
+
+V stop button listeneru přidej:
+    if (exportJsonBtn) exportJsonBtn.disabled = true;
+    if (exportCsvBtn) exportCsvBtn.disabled = true;
+
+════════════════════════════════════════════════════════════
+✅ HOTOVO! Teď můžeš exportovat data pro mastering!
+════════════════════════════════════════════════════════════
+`);
+
+// ═══════════════════════════════════════════════════════════
+// 📊 PŘÍKLAD VÝSTUPU
+// ═══════════════════════════════════════════════════════════
+
+const EXAMPLE_JSON_OUTPUT = {
+    "metadata": {
+        "exportTime": "2025-12-20T18:30:45.123Z",
+        "analyzer": "ToneMeter Enhanced",
+        "version": "3.0",
+        "sampleRate": 48000
+    },
+    "current": {
+        "volume": 45,
+        "dominantFrequency": 523,
+        "note": "C5"
+    },
+    "frequencyBands": {
+        "Sub-Bass": { "frequency": 40, "powerDB": -35.2, "range": "20-60 Hz" },
+        "Bass": { "frequency": 100, "powerDB": -28.5, "range": "60-250 Hz" },
+        "Low-Mid": { "frequency": 250, "powerDB": -25.1, "range": "250-500 Hz" },
+        "Mid": { "frequency": 800, "powerDB": -22.3, "range": "500-2000 Hz" },
+        "High-Mid": { "frequency": 2000, "powerDB": -28.7, "range": "2000-4000 Hz" },
+        "Presence": { "frequency": 5000, "powerDB": -36.5, "range": "4000-8000 Hz" },
+        "Brilliance": { "frequency": 10000, "powerDB": -44.2, "range": "8000-14000 Hz" },
+        "Air": { "frequency": 16000, "powerDB": -58.9, "range": "14000-20000 Hz" }
+    },
+    "eqRecommendations": [
+        { "band": "Sub-Bass", "currentDB": -35.2, "deviation": -2.1, "suggestion": "+1.0 dB (pod průměrem)", "gainChange": 1.0 },
+        { "band": "Presence", "currentDB": -36.5, "deviation": -3.4, "suggestion": "+1.0 dB (pod průměrem)", "gainChange": 1.0 },
+        { "band": "Brilliance", "currentDB": -44.2, "deviation": -11.1, "suggestion": "+2.0 dB (slabé pásmo)", "gainChange": 2.0 },
+        { "band": "Air", "currentDB": -58.9, "deviation": -25.8, "suggestion": "+2.0 dB (slabé pásmo)", "gainChange": 2.0 }
+    ]
+};
+
+console.log('📊 Příklad JSON výstupu:', EXAMPLE_JSON_OUTPUT);

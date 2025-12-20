@@ -599,10 +599,9 @@ class ToneMeter {
         if (!this.lastCollectionTime || (Date.now() - this.lastCollectionTime > 100)) {
             bands.forEach(band => {
                 const power = this.analyzeBandPower(band.low, band.high);
-                // Uložíme hodnotu jen pokud je > -90dB (ticho nepočítáme do průměru)
-                if (power > -90) {
-                    this.analysisHistory[band.name].push(power);
-                }
+                // Uložíme hodnotu i pokud je ticho (aby seděl čas v grafu) - nastavíme na -100dB min
+                const safePower = power > -100 ? power : -100;
+                this.analysisHistory[band.name].push(safePower);
             });
             this.lastCollectionTime = Date.now();
         }
@@ -633,7 +632,9 @@ class ToneMeter {
             dominantFreq: this.dominantFrequency,
             note: this.frequencyToNote(this.dominantFrequency),
             duration: ((Date.now() - this.startTime) / 1000).toFixed(1) + 's',
-            bands: {}
+            bands: {},
+            // Přidáme i celou historii pro JSON export
+            rawHistory: this.analysisHistory
         };
         
         bandsDef.forEach(band => {
@@ -645,7 +646,6 @@ class ToneMeter {
                 const sum = history.reduce((a, b) => a + b, 0);
                 avgPower = sum / history.length;
             } else {
-                // Pokud není historie, vezmeme aktuální hodnotu
                 avgPower = this.analyzeBandPower(band.low, band.high);
             }
             
@@ -715,7 +715,7 @@ class ToneMeter {
             metadata: {
                 exportTime: new Date().toISOString(),
                 analyzer: 'ToneMeter Enhanced',
-                version: '3.1 - Mastering Edition',
+                version: '3.3 - HTML Ultimate',
                 sampleRate: analysis.sampleRate,
                 analysisDuration: analysis.duration
             },
@@ -725,7 +725,9 @@ class ToneMeter {
                 note: analysis.note
             },
             frequencyBands: analysis.bands,
-            eqRecommendations: recommendations
+            eqRecommendations: recommendations,
+            // NOVÉ: Časová osa v JSONu
+            timeline: analysis.rawHistory
         };
         
         return JSON.stringify(exportData, null, 2);
@@ -737,14 +739,152 @@ class ToneMeter {
         
         const recommendations = this.generateEQRecommendations(analysis);
         
+        // 1. ZÁKLADNÍ SOUHRN
         let csv = 'Band,Frequency (Hz),Average Power (dB),Range,Deviation (dB),EQ Suggestion\n';
-        
         recommendations.forEach(rec => {
             const bandData = analysis.bands[rec.band];
             csv += `${rec.band},${bandData.frequency},${rec.currentDB},"${bandData.range}",${rec.deviation},"${rec.suggestion}"\n`;
         });
         
+        // 2. MEZERA
+        csv += '\n\n=== DETAILNI CASOVA OSA (Time ~ 100ms) ===\n';
+        
+        // 3. HLAVIČKA TIMELINE
+        const bandNames = ['Sub-Bass', 'Bass', 'Low-Mid', 'Mid', 'High-Mid', 'Presence', 'Brilliance', 'Air'];
+        csv += 'Time (s),' + bandNames.join(',') + '\n';
+        
+        // 4. DATA TIMELINE
+        // Použijeme délku prvního pole jako referenci
+        const sampleCount = analysis.rawHistory['Sub-Bass'].length;
+        
+        for (let i = 0; i < sampleCount; i++) {
+            // Přibližný čas (index * 0.1s)
+            const time = (i * 0.1).toFixed(1);
+            
+            let row = `${time}`;
+            bandNames.forEach(name => {
+                const val = analysis.rawHistory[name][i] || -100;
+                row += `,${val}`;
+            });
+            csv += row + '\n';
+        }
+        
         return csv;
+    }
+
+    // NOVÉ: Export do HTML reportu
+    exportToHTML() {
+        const analysis = this.get8BandAnalysis();
+        if (!analysis) return null;
+        const recommendations = this.generateEQRecommendations(analysis);
+
+        const bandNames = ['Sub-Bass', 'Bass', 'Low-Mid', 'Mid', 'High-Mid', 'Presence', 'Brilliance', 'Air'];
+
+        // HTML Struktura
+        let html = `<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <title>ToneMeter Mastering Report</title>
+    <style>
+        body { font-family: 'Courier New', monospace; background: #0b0d10; color: #e0e0e0; margin: 20px; }
+        h1 { color: #00ff88; border-bottom: 2px solid #00ff88; padding-bottom: 10px; }
+        h2 { color: #0088ff; margin-top: 30px; }
+        .meta { color: #888; margin-bottom: 20px; font-size: 0.9em; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.9em; }
+        th, td { border: 1px solid #333; padding: 8px; text-align: left; }
+        th { background: #1a1d23; color: #0088ff; }
+        tr:nth-child(even) { background: #111418; }
+        tr:hover { background: #1f242b; }
+        .val-bad { color: #ff4444; }
+        .val-ok { color: #00ff88; }
+        .val-warn { color: #ffaa00; }
+        .timeline-container { height: 500px; overflow-y: scroll; border: 1px solid #333; margin-top: 10px; }
+        .footer { margin-top: 50px; text-align: center; color: #555; font-size: 0.8em; }
+    </style>
+</head>
+<body>
+    <h1>📊 ToneMeter Mastering Report</h1>
+    <div class="meta">
+        Vygenerováno: ${new Date().toLocaleString()}<br>
+        Délka analýzy: ${analysis.duration}<br>
+        Vzorkovací frekvence: ${analysis.sampleRate} Hz
+    </div>
+
+    <h2>1. Spektrální Analýza & EQ Doporučení</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Pásmo</th>
+                <th>Rozsah</th>
+                <th>Prům. Síla (dB)</th>
+                <th>Odchylka</th>
+                <th>Doporučení</th>
+            </tr>
+        </thead>
+        <tbody>`;
+
+        recommendations.forEach(rec => {
+            const bandData = analysis.bands[rec.band];
+            const colorClass = Math.abs(rec.deviation) > 5 ? 'val-bad' : (Math.abs(rec.deviation) > 3 ? 'val-warn' : 'val-ok');
+            html += `
+            <tr>
+                <td><strong>${rec.band}</strong></td>
+                <td>${bandData.range}</td>
+                <td>${rec.currentDB} dB</td>
+                <td class="${colorClass}">${rec.deviation > 0 ? '+' : ''}${rec.deviation} dB</td>
+                <td class="${colorClass}">${rec.suggestion}</td>
+            </tr>`;
+        });
+
+        html += `
+        </tbody>
+    </table>
+
+    <h2>2. Detailní Časová Osa (Timeline)</h2>
+    <p style="font-size:0.8em; color:#888;">Záznam všech 8 pásem v čase (interval ~0.1s)</p>
+    <div class="timeline-container">
+        <table>
+            <thead>
+                <tr>
+                    <th style="position:sticky; top:0; background:#000;">Čas (s)</th>`;
+        
+        bandNames.forEach(name => {
+            html += `<th style="position:sticky; top:0; background:#000;">${name}</th>`;
+        });
+        
+        html += `
+                </tr>
+            </thead>
+            <tbody>`;
+
+        const sampleCount = analysis.rawHistory['Sub-Bass'].length;
+        for (let i = 0; i < sampleCount; i++) {
+            const time = (i * 0.1).toFixed(1);
+            html += `<tr><td>${time}</td>`;
+            bandNames.forEach(name => {
+                const val = analysis.rawHistory[name][i] || -100;
+                // Obarvit silné/slabé hodnoty pro rychlý přehled
+                let style = '';
+                if (val > -10) style = 'color:#ff4444'; // clipping/loud
+                else if (val < -60) style = 'color:#555'; // quiet
+                html += `<td style="${style}">${val.toFixed(1)}</td>`;
+            });
+            html += `</tr>`;
+        }
+
+        html += `
+            </tbody>
+        </table>
+    </div>
+
+    <div class="footer">
+        Generated by ToneMeter Enhanced - Admiral Claude & Vice Admiral Jiřík
+    </div>
+</body>
+</html>`;
+
+        return html;
     }
 
     downloadJSON(filename = 'tonemeter_analysis.json') {
@@ -786,6 +926,27 @@ class ToneMeter {
         
         console.log('ToneMeter: CSV export stažen:', filename);
     }
+
+    // NOVÉ: Download HTML funkce
+    downloadHTML(filename = 'tonemeter_report.html') {
+        const data = this.exportToHTML();
+        if (!data) {
+            console.error('ToneMeter: Nelze exportovat - analyzátor není spuštěn.');
+            return;
+        }
+        
+        const blob = new Blob([data], { type: 'text/html;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        console.log('ToneMeter: HTML report stažen:', filename);
+    }
 }
 
 window.ToneMeter = ToneMeter;
@@ -817,6 +978,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // EXPORT BUTTONS REFERENCES (DEFINOVÁNO ZVLÁŠŤ ABY SE NEMĚNILA PŮVODNÍ STRUKTURA 'DOM')
     const exportJsonBtn = document.getElementById('exportJsonBtn');
     const exportCsvBtn = document.getElementById('exportCsvBtn');
+    // NOVÉ: Tlačítko pro HTML export
+    const exportHtmlBtn = document.getElementById('exportHtmlBtn');
     const exportStatus = document.getElementById('exportStatus');
 
     if (!DOM.startBtn || !DOM.stopBtn || !DOM.volumeValue || !DOM.frequencyValue || !DOM.noteValue || !DOM.statusIndicator || !DOM.canvas) {
@@ -971,6 +1134,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // POVOLENÍ EXPORT TLAČÍTEK
             if (exportJsonBtn) exportJsonBtn.disabled = false;
             if (exportCsvBtn) exportCsvBtn.disabled = false;
+            if (exportHtmlBtn) exportHtmlBtn.disabled = false;
 
         } catch (error) {
             console.error('ToneMeter: Chyba při startu:', error);
@@ -994,6 +1158,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // ZAKÁZÁNÍ EXPORT TLAČÍTEK
             if (exportJsonBtn) exportJsonBtn.disabled = true;
             if (exportCsvBtn) exportCsvBtn.disabled = true;
+            if (exportHtmlBtn) exportHtmlBtn.disabled = true;
 
             // NOVÉ: Reset tuneru
             if (DOM.tunerNote) DOM.tunerNote.textContent = '---';
@@ -1041,6 +1206,22 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (exportStatus) {
                     exportStatus.textContent = '✅ CSV exportován!';
                     exportStatus.style.color = '#00ff88';
+                    setTimeout(() => { exportStatus.textContent = ''; }, 3000);
+                }
+            }
+        });
+    }
+
+    // NOVÉ: HTML Export Listener
+    if (exportHtmlBtn) {
+        exportHtmlBtn.addEventListener('click', function() {
+            if (toneMeter && toneMeter.isRunning()) {
+                const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+                toneMeter.downloadHTML(`star-trek-audio-report_${timestamp}.html`);
+                
+                if (exportStatus) {
+                    exportStatus.textContent = '✅ HTML Report uložen!';
+                    exportStatus.style.color = '#0088ff';
                     setTimeout(() => { exportStatus.textContent = ''; }, 3000);
                 }
             }

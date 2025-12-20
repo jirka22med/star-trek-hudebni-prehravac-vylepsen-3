@@ -1,6 +1,15 @@
-/**
- * 🚀 UNIVERZÁLNÍ TONE.METER ENHANCED - s A4 kalibrací a auto-kalibrací mikrofonu + CSS barvy
+/* * ═══════════════════════════════════════════════════════════
+ * 🛠️ PROTOKOL ÚPRAV KÓDU
+ * ═══════════════════════════════════════════════════════════
+ * 👨‍✈️ PROVEDL: Admirál Gemini
+ * 🫡 PRO: Více Admirála Jiříka
+ * 📅 DATUM: 20. prosince 2025
+ * ⌚ ČAS: 09:54 CET
+ * 📝 STATUS: Implementace exportních funkcí úspěšná
+ * ═══════════════════════════════════════════════════════════
  */
+
+
 class ToneMeter {
     constructor(options = {}) {
         this.options = {
@@ -518,239 +527,11 @@ class ToneMeter {
     getNote() { return this.frequencyToNote(this.dominantFrequency); }
     getA4Frequency() { return this.a4Frequency; }
     getOptimalGain() { return this.optimalGain; }
-}
 
-window.ToneMeter = ToneMeter;
+    // ==========================================
+    // 📊 NOVÉ EXPORTNÍ FUNKCE (PRO MASTERING)
+    // ==========================================
 
-document.addEventListener('DOMContentLoaded', function() {
-    const DOM = {
-        startBtn: document.getElementById('startBtn'),
-        stopBtn: document.getElementById('stopBtn'),
-        calibrateBtn: document.getElementById('calibrateBtn'),
-        volumeValue: document.getElementById('volumeValue'),
-        frequencyValue: document.getElementById('frequencyValue'),
-        noteValue: document.getElementById('noteValue'),
-        statusIndicator: document.getElementById('statusIndicator'),
-        canvas: document.getElementById('visualizerCanvas'),
-        inputVolumeSlider: document.getElementById('inputVolumeSlider'),
-        inputVolumeValue: document.getElementById('inputVolumeValue'),
-        micBoostSlider: document.getElementById('micBoostSlider'),
-        micBoostValue: document.getElementById('micBoostValue'),
-        a4FreqInput: document.getElementById('a4FreqInput'),
-        resetA4Btn: document.getElementById('resetA4Btn'),
-        micCalibrationInfo: document.getElementById('micCalibrationInfo'),
-        // NOVÉ: Tuner prvky
-        tunerNote: document.getElementById('tunerNote'),
-        tunerNeedle: document.getElementById('tunerNeedle'),
-        centValue: document.getElementById('centValue'),
-        frequencyDiff: document.getElementById('frequencyDiff')
-    };
-
-    if (!DOM.startBtn || !DOM.stopBtn || !DOM.volumeValue || !DOM.frequencyValue || !DOM.noteValue || !DOM.statusIndicator || !DOM.canvas) {
-        console.error('ToneMeter: Některé HTML prvky chybí.');
-        return;
-    }
-
-    let toneMeter = null;
-
-    // NOVÉ: A4 kalibrace
-    DOM.a4FreqInput.addEventListener('input', function() {
-        const freq = parseFloat(this.value);
-        if (toneMeter && freq >= 400 && freq <= 580) {
-            toneMeter.setA4Frequency(freq);
-            console.log('A4 frekvence změněna na:', freq, 'Hz');
-        }
-    });
-
-    DOM.resetA4Btn.addEventListener('click', function() {
-        DOM.a4FreqInput.value = 440;
-        if (toneMeter) {
-            toneMeter.setA4Frequency(440);
-        }
-        console.log('A4 frekvence resetována na 440 Hz');
-    });
-
-    // Ovládání posuvníků
-    DOM.inputVolumeSlider.addEventListener('input', function() {
-        const value = this.value;
-        DOM.inputVolumeValue.textContent = value + '%';
-        if (toneMeter && toneMeter.isRunning()) {
-            toneMeter.setInputVolume(value);
-        }
-    });
-
-    DOM.micBoostSlider.addEventListener('input', function() {
-        const value = this.value;
-        const boost = (value / 100).toFixed(1);
-        DOM.micBoostValue.textContent = boost + 'x';
-        if (toneMeter && toneMeter.isRunning()) {
-            toneMeter.setMicBoost(value);
-        }
-    });
-
-    // NOVÉ: Tlačítko pro manuální kalibraci
-    DOM.calibrateBtn.addEventListener('click', function() {
-        if (toneMeter && toneMeter.isRunning()) {
-            DOM.statusIndicator.className = 'tone-meter-status calibrating';
-            DOM.statusIndicator.textContent = '🔧 KALIBRACE MIKROFONU...';
-            toneMeter.startCalibration();
-        }
-    });
-
-    DOM.startBtn.addEventListener('click', async function() {
-        console.log('ToneMeter: Start button clicked.');
-        
-        if (toneMeter && toneMeter.getStoredMicrophonePermission()) {
-            DOM.statusIndicator.className = 'tone-meter-status active';
-            DOM.statusIndicator.textContent = '🔄 OBNOVUJI PŘIPOJENÍ...';
-        }
-        
-        try {
-            if (!toneMeter) {
-                toneMeter = new ToneMeter({
-                    onToneDetected: (data) => {
-                        if (DOM.frequencyValue) DOM.frequencyValue.textContent = data.frequency + ' Hz';
-                        if (DOM.noteValue) DOM.noteValue.textContent = data.note || '---';
-                        
-                        // NOVÉ: Aktualizace tuneru
-                        if (data.tuner && DOM.tunerNote && DOM.tunerNeedle && DOM.centValue && DOM.frequencyDiff) {
-                            // Aktualizace noty
-                            DOM.tunerNote.textContent = data.tuner.note || '---';
-                            
-                            // Aktualizace ručičky (-50° až +50°)
-                            const maxAngle = 45; // stupňů
-                            const angle = Math.max(-maxAngle, Math.min(maxAngle, data.tuner.cents * 0.9));
-                            DOM.tunerNeedle.style.transform = `translateX(-50%) rotate(${angle}deg)`;
-                            
-                            // Barva ručičky podle ladění
-                            if (data.tuner.isInTune) {
-                                DOM.tunerNeedle.className = 'tone-meter-tuner-needle in-tune';
-                            } else {
-                                DOM.tunerNeedle.className = 'tone-meter-tuner-needle';
-                            }
-                            
-                            // Aktualizace hodnoty centů
-                            DOM.centValue.textContent = (data.tuner.cents > 0 ? '+' : '') + data.tuner.cents + '¢';
-                            
-                            // Barva podle odchylky
-                            if (data.tuner.isInTune) {
-                                DOM.centValue.className = 'tone-meter-cent-value in-tune';
-                            } else if (data.tuner.cents > 0) {
-                                DOM.centValue.className = 'tone-meter-cent-value sharp';
-                            } else {
-                                DOM.centValue.className = 'tone-meter-cent-value flat';
-                            }
-                            
-                            // Cílová frekvence
-                            if (data.tuner.targetFrequency > 0) {
-                                DOM.frequencyDiff.textContent = `Cílová frekvence: ${data.tuner.targetFrequency} Hz (${data.tuner.deviation > 0 ? '+' : ''}${data.tuner.deviation} Hz)`;
-                            } else {
-                                DOM.frequencyDiff.textContent = 'Cílová frekvence: --- Hz';
-                            }
-                        }
-                    },
-                    onVolumeChange: (volume) => {
-                        if (DOM.volumeValue) DOM.volumeValue.textContent = volume + '%';
-                    },
-                    onCalibrationUpdate: (status) => {
-                        // Aktualizace během kalibrace
-                        if (status.phase === 'start') {
-                            DOM.statusIndicator.className = 'tone-meter-status calibrating';
-                            DOM.statusIndicator.textContent = '🔧 ' + status.message.toUpperCase();
-                            DOM.micCalibrationInfo.textContent = status.message;
-                        } else if (status.phase === 'progress') {
-                            DOM.statusIndicator.textContent = '🔧 ' + status.message.toUpperCase();
-                            DOM.micCalibrationInfo.textContent = status.message;
-                        } else if (status.phase === 'complete') {
-                            DOM.statusIndicator.className = 'tone-meter-status active';
-                            DOM.statusIndicator.textContent = '🎵 AKTIVNÍ - ANALYZUJI ZVUK';
-                            DOM.micCalibrationInfo.textContent = status.message + ' - Kalibrace úspěšná!';
-                            
-                            // Aktualizace posuvníku boost
-                            const boostValue = Math.round(status.optimalGain * 100);
-                            DOM.micBoostSlider.value = boostValue;
-                            DOM.micBoostValue.textContent = status.optimalGain.toFixed(1) + 'x';
-                        } else if (status.phase === 'error') {
-                            DOM.statusIndicator.className = 'tone-meter-status active';
-                            DOM.statusIndicator.textContent = '🎵 AKTIVNÍ - ANALYZUJI ZVUK';
-                            DOM.micCalibrationInfo.textContent = status.message;
-                        }
-                    }
-                });
-                
-                // Nastavení A4 frekvence
-                toneMeter.setA4Frequency(parseFloat(DOM.a4FreqInput.value));
-            }
-
-            await toneMeter.start();
-            
-            toneMeter.setInputVolume(DOM.inputVolumeSlider.value);
-            toneMeter.setMicBoost(DOM.micBoostSlider.value);
-            
-            toneMeter.createVisualizer(DOM.canvas);
-
-            DOM.statusIndicator.className = 'tone-meter-status active';
-            DOM.statusIndicator.textContent = '🎵 AKTIVNÍ - SPOUŠTÍM KALIBRACI...';
-            DOM.startBtn.disabled = true;
-            DOM.stopBtn.disabled = false;
-            DOM.calibrateBtn.disabled = false;
-        } catch (error) {
-            console.error('ToneMeter: Chyba při startu:', error);
-            DOM.statusIndicator.className = 'tone-meter-status error';
-            DOM.statusIndicator.textContent = '❌ CHYBA - POVOLTE MIKROFON';
-            DOM.micCalibrationInfo.textContent = 'Chyba: Není povolený přístup k mikrofonu';
-        }
-    });
-
-    DOM.stopBtn.addEventListener('click', function() {
-        console.log('ToneMeter: Stop button clicked.');
-        if (toneMeter) {
-            toneMeter.stop();
-            DOM.statusIndicator.className = 'tone-meter-status inactive';
-            DOM.statusIndicator.textContent = '⏹️ ZASTAVENO';
-            DOM.startBtn.disabled = false;
-            DOM.stopBtn.disabled = true;
-            DOM.calibrateBtn.disabled = true;
-            DOM.micCalibrationInfo.textContent = 'Automatická kalibrace citlivosti se spustí po startu měření';
-            // NOVÉ: Reset tuneru
-            if (DOM.tunerNote) DOM.tunerNote.textContent = '---';
-            if (DOM.tunerNeedle) {
-                DOM.tunerNeedle.style.transform = 'translateX(-50%) rotate(0deg)';
-                DOM.tunerNeedle.className = 'tone-meter-tuner-needle';
-            }
-            if (DOM.centValue) {
-                DOM.centValue.textContent = '0¢';
-                DOM.centValue.className = 'tone-meter-cent-value';
-            }
-            if (DOM.frequencyDiff) DOM.frequencyDiff.textContent = 'Cílová frekvence: --- Hz';
-            
-            if (DOM.volumeValue) DOM.volumeValue.textContent = '0%';
-            if (DOM.frequencyValue) DOM.frequencyValue.textContent = '0 Hz';
-            if (DOM.noteValue) DOM.noteValue.textContent = '---';
-        }
-    });
-});
-
-/**
- * ═══════════════════════════════════════════════════════════
- * 📊 TONEMETER EXPORT MODULE - PRO MASTERING ANALÝZU
- * ═══════════════════════════════════════════════════════════
- * Vytvořil: Admirál Claude & Více Admirál Jiřík
- * Účel: Export frekvenčních dat do CSV/JSON pro mastering
- * Instalace: VLOŽ NA KONEC audiou-vizuace.js souboru!
- * ═══════════════════════════════════════════════════════════
- */
-
-// ─────────────────────────────────────────────────────────────
-// PŘIDEJ NOVÉ METODY DO TONEMETER CLASS
-// ─────────────────────────────────────────────────────────────
-
-/**
- * Přidej tyto metody DO ToneMeter class (před poslední })
- */
-
-// 1. ANALÝZA 8 PÁSEM (přidej do ToneMeter class)
-/*
     analyzeBandPower(lowFreq, highFreq) {
         if (!this.dataArray || !this.audioContext) return -60;
         
@@ -942,40 +723,236 @@ document.addEventListener('DOMContentLoaded', function() {
         
         console.log('ToneMeter: CSV export stažen:', filename);
     }
-*/
+}
 
-// ─────────────────────────────────────────────────────────────
-// UI TLAČÍTKA PRO EXPORT (přidej do HTML)
-// ─────────────────────────────────────────────────────────────
+window.ToneMeter = ToneMeter;
 
-/**
- * PŘIDEJ DO HTML (tam kde máš ostatní tlačítka):
- * 
- * <div class="export-controls">
- *     <h3>📊 Export Analýzy</h3>
- *     <button id="exportJsonBtn" disabled>
- *         📄 Export JSON
- *     </button>
- *     <button id="exportCsvBtn" disabled>
- *         📊 Export CSV
- *     </button>
- *     <div id="exportStatus"></div>
- * </div>
- */
+document.addEventListener('DOMContentLoaded', function() {
+    const DOM = {
+        startBtn: document.getElementById('startBtn'),
+        stopBtn: document.getElementById('stopBtn'),
+        calibrateBtn: document.getElementById('calibrateBtn'),
+        volumeValue: document.getElementById('volumeValue'),
+        frequencyValue: document.getElementById('frequencyValue'),
+        noteValue: document.getElementById('noteValue'),
+        statusIndicator: document.getElementById('statusIndicator'),
+        canvas: document.getElementById('visualizerCanvas'),
+        inputVolumeSlider: document.getElementById('inputVolumeSlider'),
+        inputVolumeValue: document.getElementById('inputVolumeValue'),
+        micBoostSlider: document.getElementById('micBoostSlider'),
+        micBoostValue: document.getElementById('micBoostValue'),
+        a4FreqInput: document.getElementById('a4FreqInput'),
+        resetA4Btn: document.getElementById('resetA4Btn'),
+        micCalibrationInfo: document.getElementById('micCalibrationInfo'),
+        // NOVÉ: Tuner prvky
+        tunerNote: document.getElementById('tunerNote'),
+        tunerNeedle: document.getElementById('tunerNeedle'),
+        centValue: document.getElementById('centValue'),
+        frequencyDiff: document.getElementById('frequencyDiff')
+    };
 
-// ─────────────────────────────────────────────────────────────
-// EVENT LISTENERS (přidej do DOMContentLoaded)
-// ─────────────────────────────────────────────────────────────
-
-/**
- * PŘIDEJ DO document.addEventListener('DOMContentLoaded', ...) na konec:
- */
-
-/*
-    // Export tlačítka
+    // EXPORT BUTTONS REFERENCES (DEFINOVÁNO ZVLÁŠŤ ABY SE NEMĚNILA PŮVODNÍ STRUKTURA 'DOM')
     const exportJsonBtn = document.getElementById('exportJsonBtn');
     const exportCsvBtn = document.getElementById('exportCsvBtn');
     const exportStatus = document.getElementById('exportStatus');
+
+    if (!DOM.startBtn || !DOM.stopBtn || !DOM.volumeValue || !DOM.frequencyValue || !DOM.noteValue || !DOM.statusIndicator || !DOM.canvas) {
+        console.error('ToneMeter: Některé HTML prvky chybí.');
+        return;
+    }
+
+    let toneMeter = null;
+
+    // NOVÉ: A4 kalibrace
+    DOM.a4FreqInput.addEventListener('input', function() {
+        const freq = parseFloat(this.value);
+        if (toneMeter && freq >= 400 && freq <= 580) {
+            toneMeter.setA4Frequency(freq);
+            console.log('A4 frekvence změněna na:', freq, 'Hz');
+        }
+    });
+
+    DOM.resetA4Btn.addEventListener('click', function() {
+        DOM.a4FreqInput.value = 440;
+        if (toneMeter) {
+            toneMeter.setA4Frequency(440);
+        }
+        console.log('A4 frekvence resetována na 440 Hz');
+    });
+
+    // Ovládání posuvníků
+    DOM.inputVolumeSlider.addEventListener('input', function() {
+        const value = this.value;
+        DOM.inputVolumeValue.textContent = value + '%';
+        if (toneMeter && toneMeter.isRunning()) {
+            toneMeter.setInputVolume(value);
+        }
+    });
+
+    DOM.micBoostSlider.addEventListener('input', function() {
+        const value = this.value;
+        const boost = (value / 100).toFixed(1);
+        DOM.micBoostValue.textContent = boost + 'x';
+        if (toneMeter && toneMeter.isRunning()) {
+            toneMeter.setMicBoost(value);
+        }
+    });
+
+    // NOVÉ: Tlačítko pro manuální kalibraci
+    DOM.calibrateBtn.addEventListener('click', function() {
+        if (toneMeter && toneMeter.isRunning()) {
+            DOM.statusIndicator.className = 'tone-meter-status calibrating';
+            DOM.statusIndicator.textContent = '🔧 KALIBRACE MIKROFONU...';
+            toneMeter.startCalibration();
+        }
+    });
+
+    DOM.startBtn.addEventListener('click', async function() {
+        console.log('ToneMeter: Start button clicked.');
+        
+        if (toneMeter && toneMeter.getStoredMicrophonePermission()) {
+            DOM.statusIndicator.className = 'tone-meter-status active';
+            DOM.statusIndicator.textContent = '🔄 OBNOVUJI PŘIPOJENÍ...';
+        }
+        
+        try {
+            if (!toneMeter) {
+                toneMeter = new ToneMeter({
+                    onToneDetected: (data) => {
+                        if (DOM.frequencyValue) DOM.frequencyValue.textContent = data.frequency + ' Hz';
+                        if (DOM.noteValue) DOM.noteValue.textContent = data.note || '---';
+                        
+                        // NOVÉ: Aktualizace tuneru
+                        if (data.tuner && DOM.tunerNote && DOM.tunerNeedle && DOM.centValue && DOM.frequencyDiff) {
+                            // Aktualizace noty
+                            DOM.tunerNote.textContent = data.tuner.note || '---';
+                            
+                            // Aktualizace ručičky (-50° až +50°)
+                            const maxAngle = 45; // stupňů
+                            const angle = Math.max(-maxAngle, Math.min(maxAngle, data.tuner.cents * 0.9));
+                            DOM.tunerNeedle.style.transform = `translateX(-50%) rotate(${angle}deg)`;
+                            
+                            // Barva ručičky podle ladění
+                            if (data.tuner.isInTune) {
+                                DOM.tunerNeedle.className = 'tone-meter-tuner-needle in-tune';
+                            } else {
+                                DOM.tunerNeedle.className = 'tone-meter-tuner-needle';
+                            }
+                            
+                            // Aktualizace hodnoty centů
+                            DOM.centValue.textContent = (data.tuner.cents > 0 ? '+' : '') + data.tuner.cents + '¢';
+                            
+                            // Barva podle odchylky
+                            if (data.tuner.isInTune) {
+                                DOM.centValue.className = 'tone-meter-cent-value in-tune';
+                            } else if (data.tuner.cents > 0) {
+                                DOM.centValue.className = 'tone-meter-cent-value sharp';
+                            } else {
+                                DOM.centValue.className = 'tone-meter-cent-value flat';
+                            }
+                            
+                            // Cílová frekvence
+                            if (data.tuner.targetFrequency > 0) {
+                                DOM.frequencyDiff.textContent = `Cílová frekvence: ${data.tuner.targetFrequency} Hz (${data.tuner.deviation > 0 ? '+' : ''}${data.tuner.deviation} Hz)`;
+                            } else {
+                                DOM.frequencyDiff.textContent = 'Cílová frekvence: --- Hz';
+                            }
+                        }
+                    },
+                    onVolumeChange: (volume) => {
+                        if (DOM.volumeValue) DOM.volumeValue.textContent = volume + '%';
+                    },
+                    onCalibrationUpdate: (status) => {
+                        // Aktualizace během kalibrace
+                        if (status.phase === 'start') {
+                            DOM.statusIndicator.className = 'tone-meter-status calibrating';
+                            DOM.statusIndicator.textContent = '🔧 ' + status.message.toUpperCase();
+                            DOM.micCalibrationInfo.textContent = status.message;
+                        } else if (status.phase === 'progress') {
+                            DOM.statusIndicator.textContent = '🔧 ' + status.message.toUpperCase();
+                            DOM.micCalibrationInfo.textContent = status.message;
+                        } else if (status.phase === 'complete') {
+                            DOM.statusIndicator.className = 'tone-meter-status active';
+                            DOM.statusIndicator.textContent = '🎵 AKTIVNÍ - ANALYZUJI ZVUK';
+                            DOM.micCalibrationInfo.textContent = status.message + ' - Kalibrace úspěšná!';
+                            
+                            // Aktualizace posuvníku boost
+                            const boostValue = Math.round(status.optimalGain * 100);
+                            DOM.micBoostSlider.value = boostValue;
+                            DOM.micBoostValue.textContent = status.optimalGain.toFixed(1) + 'x';
+                        } else if (status.phase === 'error') {
+                            DOM.statusIndicator.className = 'tone-meter-status active';
+                            DOM.statusIndicator.textContent = '🎵 AKTIVNÍ - ANALYZUJI ZVUK';
+                            DOM.micCalibrationInfo.textContent = status.message;
+                        }
+                    }
+                });
+                
+                // Nastavení A4 frekvence
+                toneMeter.setA4Frequency(parseFloat(DOM.a4FreqInput.value));
+            }
+
+            await toneMeter.start();
+            
+            toneMeter.setInputVolume(DOM.inputVolumeSlider.value);
+            toneMeter.setMicBoost(DOM.micBoostSlider.value);
+            
+            toneMeter.createVisualizer(DOM.canvas);
+
+            DOM.statusIndicator.className = 'tone-meter-status active';
+            DOM.statusIndicator.textContent = '🎵 AKTIVNÍ - SPOUŠTÍM KALIBRACI...';
+            DOM.startBtn.disabled = true;
+            DOM.stopBtn.disabled = false;
+            DOM.calibrateBtn.disabled = false;
+            
+            // POVOLENÍ EXPORT TLAČÍTEK
+            if (exportJsonBtn) exportJsonBtn.disabled = false;
+            if (exportCsvBtn) exportCsvBtn.disabled = false;
+
+        } catch (error) {
+            console.error('ToneMeter: Chyba při startu:', error);
+            DOM.statusIndicator.className = 'tone-meter-status error';
+            DOM.statusIndicator.textContent = '❌ CHYBA - POVOLTE MIKROFON';
+            DOM.micCalibrationInfo.textContent = 'Chyba: Není povolený přístup k mikrofonu';
+        }
+    });
+
+    DOM.stopBtn.addEventListener('click', function() {
+        console.log('ToneMeter: Stop button clicked.');
+        if (toneMeter) {
+            toneMeter.stop();
+            DOM.statusIndicator.className = 'tone-meter-status inactive';
+            DOM.statusIndicator.textContent = '⏹️ ZASTAVENO';
+            DOM.startBtn.disabled = false;
+            DOM.stopBtn.disabled = true;
+            DOM.calibrateBtn.disabled = true;
+            DOM.micCalibrationInfo.textContent = 'Automatická kalibrace citlivosti se spustí po startu měření';
+            
+            // ZAKÁZÁNÍ EXPORT TLAČÍTEK
+            if (exportJsonBtn) exportJsonBtn.disabled = true;
+            if (exportCsvBtn) exportCsvBtn.disabled = true;
+
+            // NOVÉ: Reset tuneru
+            if (DOM.tunerNote) DOM.tunerNote.textContent = '---';
+            if (DOM.tunerNeedle) {
+                DOM.tunerNeedle.style.transform = 'translateX(-50%) rotate(0deg)';
+                DOM.tunerNeedle.className = 'tone-meter-tuner-needle';
+            }
+            if (DOM.centValue) {
+                DOM.centValue.textContent = '0¢';
+                DOM.centValue.className = 'tone-meter-cent-value';
+            }
+            if (DOM.frequencyDiff) DOM.frequencyDiff.textContent = 'Cílová frekvence: --- Hz';
+            
+            if (DOM.volumeValue) DOM.volumeValue.textContent = '0%';
+            if (DOM.frequencyValue) DOM.frequencyValue.textContent = '0 Hz';
+            if (DOM.noteValue) DOM.noteValue.textContent = '---';
+        }
+    });
+
+    // ==========================================
+    // 📊 EXPORT LISTENERS (PRO MASTERING)
+    // ==========================================
 
     if (exportJsonBtn) {
         exportJsonBtn.addEventListener('click', function() {
@@ -1006,108 +983,4 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
-
-    // Upravit start button - povolit export
-    // (Najdi původní start button listener a přidej na konec):
-    // exportJsonBtn.disabled = false;
-    // exportCsvBtn.disabled = false;
-
-    // Upravit stop button - zakázat export
-    // (Najdi původní stop button listener a přidej na konec):
-    // exportJsonBtn.disabled = true;
-    // exportCsvBtn.disabled = true;
-*/
-
-// ═══════════════════════════════════════════════════════════
-// 📋 KOMPLETNÍ INSTALAČNÍ INSTRUKCE
-// ═══════════════════════════════════════════════════════════
-
-console.log(`
-╔══════════════════════════════════════════════════════════╗
-║      📊 TONEMETER EXPORT MODULE - INSTALACE 📊          ║
-╚══════════════════════════════════════════════════════════╝
-
-🔧 KROK 1: PŘIDEJ METODY DO TONEMETER CLASS
-────────────────────────────────────────────────────────────
-Najdi v audiou-vizuace.js řádek:
-    isRunning() { return this.isActive; }
-    getVolume() { return this.currentVolume; }
-    ...
-}  <--- PŘED tímto }
-
-A VLOŽ všechny metody z komentáře /* ... */ výše
-(analyzeBandPower, get8BandAnalysis, generateEQRecommendations, 
- exportToJSON, exportToCSV, downloadJSON, downloadCSV)
-
-────────────────────────────────────────────────────────────
-🔧 KROK 2: PŘIDEJ HTML TLAČÍTKA
-────────────────────────────────────────────────────────────
-Do HTML přidej:
-
-<div class="export-controls">
-    <h3>📊 Export Analýzy pro Mastering</h3>
-    <button id="exportJsonBtn" disabled>📄 Export JSON</button>
-    <button id="exportCsvBtn" disabled>📊 Export CSV</button>
-    <div id="exportStatus"></div>
-</div>
-
-────────────────────────────────────────────────────────────
-🔧 KROK 3: PŘIDEJ EVENT LISTENERS
-────────────────────────────────────────────────────────────
-Na KONEC document.addEventListener('DOMContentLoaded', ...) 
-přidej kód z komentáře výše (export button listeners)
-
-────────────────────────────────────────────────────────────
-🔧 KROK 4: AKTIVUJ TLAČÍTKA PŘI STARTU
-────────────────────────────────────────────────────────────
-Najdi v start button listeneru řádek:
-    DOM.calibrateBtn.disabled = false;
-
-A za něj přidej:
-    if (exportJsonBtn) exportJsonBtn.disabled = false;
-    if (exportCsvBtn) exportCsvBtn.disabled = false;
-
-V stop button listeneru přidej:
-    if (exportJsonBtn) exportJsonBtn.disabled = true;
-    if (exportCsvBtn) exportCsvBtn.disabled = true;
-
-════════════════════════════════════════════════════════════
-✅ HOTOVO! Teď můžeš exportovat data pro mastering!
-════════════════════════════════════════════════════════════
-`);
-
-// ═══════════════════════════════════════════════════════════
-// 📊 PŘÍKLAD VÝSTUPU
-// ═══════════════════════════════════════════════════════════
-
-const EXAMPLE_JSON_OUTPUT = {
-    "metadata": {
-        "exportTime": "2025-12-20T18:30:45.123Z",
-        "analyzer": "ToneMeter Enhanced",
-        "version": "3.0",
-        "sampleRate": 48000
-    },
-    "current": {
-        "volume": 45,
-        "dominantFrequency": 523,
-        "note": "C5"
-    },
-    "frequencyBands": {
-        "Sub-Bass": { "frequency": 40, "powerDB": -35.2, "range": "20-60 Hz" },
-        "Bass": { "frequency": 100, "powerDB": -28.5, "range": "60-250 Hz" },
-        "Low-Mid": { "frequency": 250, "powerDB": -25.1, "range": "250-500 Hz" },
-        "Mid": { "frequency": 800, "powerDB": -22.3, "range": "500-2000 Hz" },
-        "High-Mid": { "frequency": 2000, "powerDB": -28.7, "range": "2000-4000 Hz" },
-        "Presence": { "frequency": 5000, "powerDB": -36.5, "range": "4000-8000 Hz" },
-        "Brilliance": { "frequency": 10000, "powerDB": -44.2, "range": "8000-14000 Hz" },
-        "Air": { "frequency": 16000, "powerDB": -58.9, "range": "14000-20000 Hz" }
-    },
-    "eqRecommendations": [
-        { "band": "Sub-Bass", "currentDB": -35.2, "deviation": -2.1, "suggestion": "+1.0 dB (pod průměrem)", "gainChange": 1.0 },
-        { "band": "Presence", "currentDB": -36.5, "deviation": -3.4, "suggestion": "+1.0 dB (pod průměrem)", "gainChange": 1.0 },
-        { "band": "Brilliance", "currentDB": -44.2, "deviation": -11.1, "suggestion": "+2.0 dB (slabé pásmo)", "gainChange": 2.0 },
-        { "band": "Air", "currentDB": -58.9, "deviation": -25.8, "suggestion": "+2.0 dB (slabé pásmo)", "gainChange": 2.0 }
-    ]
-};
-
-console.log('📊 Příklad JSON výstupu:', EXAMPLE_JSON_OUTPUT);
+});

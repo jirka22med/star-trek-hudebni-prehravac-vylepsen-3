@@ -10,6 +10,9 @@
  */
 
 
+/**
+ * 🚀 UNIVERZÁLNÍ TONE.METER ENHANCED - s A4 kalibrací a auto-kalibrací mikrofonu + CSS barvy
+ */
 class ToneMeter {
     constructor(options = {}) {
         this.options = {
@@ -49,6 +52,22 @@ class ToneMeter {
         this.volumeHistory = [];
         this.maxHistoryLength = 50;
         
+        // ==========================================
+        // 📊 NOVÉ: HISTORIE PRO MASTERING ANALÝZU
+        // ==========================================
+        this.analysisHistory = {
+            'Sub-Bass': [],
+            'Bass': [],
+            'Low-Mid': [],
+            'Mid': [],
+            'High-Mid': [],
+            'Presence': [],
+            'Brilliance': [],
+            'Air': []
+        };
+        this.startTime = 0;
+        this.lastCollectionTime = 0;
+
         this.init();
     }
 
@@ -250,14 +269,16 @@ class ToneMeter {
             this.gainNode.connect(this.analyserNode);
             
             this.isActive = true;
-            this.startAnalysis();
+            this.startTime = Date.now(); // Zaznamenat start pro export
             
-            // NOVÉ: Automatická kalibrace po 2 sekundách
-           /* setTimeout(() => {
-                if (this.isActive) {
-                    this.startCalibration();
-                }
-            }, 2000); */
+            // RESET HISTORIE ANALÝZY PŘI STARTU
+            this.analysisHistory = {
+                'Sub-Bass': [], 'Bass': [], 'Low-Mid': [], 'Mid': [], 
+                'High-Mid': [], 'Presence': [], 'Brilliance': [], 'Air': []
+            };
+            this.lastCollectionTime = 0;
+            
+            this.startAnalysis();
             
             console.log('ToneMeter: Analýza zvuku spuštěna.');
         } catch (error) {
@@ -291,6 +312,9 @@ class ToneMeter {
             // NOVÉ: Tuner kalkulace
             this.tunerData = this.calculateTunerData(this.dominantFrequency);
             
+            // 📊 SBĚR DAT PRO MASTERING (na pozadí)
+            this.collectMasteringData();
+
             // NOVÉ: Ukládání vzorků během kalibrace
             if (this.isCalibrating) {
                 this.calibrationSamples.push(this.currentVolume);
@@ -529,7 +553,7 @@ class ToneMeter {
     getOptimalGain() { return this.optimalGain; }
 
     // ==========================================
-    // 📊 NOVÉ EXPORTNÍ FUNKCE (PRO MASTERING)
+    // 📊 MASTERING EXPORT MODULE
     // ==========================================
 
     analyzeBandPower(lowFreq, highFreq) {
@@ -558,15 +582,40 @@ class ToneMeter {
         return Math.round(dbValue * 10) / 10;
     }
 
+    // NOVÉ: Sběr dat pro dlouhodobou analýzu
+    collectMasteringData() {
+        const bands = [
+            { name: 'Sub-Bass', low: 20, high: 60 },
+            { name: 'Bass', low: 60, high: 250 },
+            { name: 'Low-Mid', low: 250, high: 500 },
+            { name: 'Mid', low: 500, high: 2000 },
+            { name: 'High-Mid', low: 2000, high: 4000 },
+            { name: 'Presence', low: 4000, high: 8000 },
+            { name: 'Brilliance', low: 8000, high: 14000 },
+            { name: 'Air', low: 14000, high: 20000 }
+        ];
+
+        // Sběr každých cca 100ms (ne při každém framu, šetříme paměť)
+        if (!this.lastCollectionTime || (Date.now() - this.lastCollectionTime > 100)) {
+            bands.forEach(band => {
+                const power = this.analyzeBandPower(band.low, band.high);
+                // Uložíme hodnotu jen pokud je > -90dB (ticho nepočítáme do průměru)
+                if (power > -90) {
+                    this.analysisHistory[band.name].push(power);
+                }
+            });
+            this.lastCollectionTime = Date.now();
+        }
+    }
+
+    // UPRAVENÉ: Výpočet průměru z historie
     get8BandAnalysis() {
         if (!this.isActive) {
             console.warn('ToneMeter: Nelze analyzovat - není spuštěn.');
             return null;
         }
-        
-        this.analyserNode.getByteFrequencyData(this.dataArray);
-        
-        const bands = [
+
+        const bandsDef = [
             { name: 'Sub-Bass', freq: 40, low: 20, high: 60 },
             { name: 'Bass', freq: 100, low: 60, high: 250 },
             { name: 'Low-Mid', freq: 250, low: 250, high: 500 },
@@ -583,15 +632,28 @@ class ToneMeter {
             volume: this.currentVolume,
             dominantFreq: this.dominantFrequency,
             note: this.frequencyToNote(this.dominantFrequency),
+            duration: ((Date.now() - this.startTime) / 1000).toFixed(1) + 's',
             bands: {}
         };
         
-        bands.forEach(band => {
-            const power = this.analyzeBandPower(band.low, band.high);
+        bandsDef.forEach(band => {
+            // Získáme průměr z historie
+            const history = this.analysisHistory[band.name];
+            let avgPower = -90;
+            
+            if (history && history.length > 0) {
+                const sum = history.reduce((a, b) => a + b, 0);
+                avgPower = sum / history.length;
+            } else {
+                // Pokud není historie, vezmeme aktuální hodnotu
+                avgPower = this.analyzeBandPower(band.low, band.high);
+            }
+            
             analysis.bands[band.name] = {
                 frequency: band.freq,
-                powerDB: power,
-                range: `${band.low}-${band.high} Hz`
+                powerDB: Math.round(avgPower * 10) / 10,
+                range: `${band.low}-${band.high} Hz`,
+                samples: history.length
             };
         });
         
@@ -653,8 +715,9 @@ class ToneMeter {
             metadata: {
                 exportTime: new Date().toISOString(),
                 analyzer: 'ToneMeter Enhanced',
-                version: '3.0',
-                sampleRate: analysis.sampleRate
+                version: '3.1 - Mastering Edition',
+                sampleRate: analysis.sampleRate,
+                analysisDuration: analysis.duration
             },
             current: {
                 volume: analysis.volume,
@@ -674,7 +737,7 @@ class ToneMeter {
         
         const recommendations = this.generateEQRecommendations(analysis);
         
-        let csv = 'Band,Frequency (Hz),Power (dB),Range,Deviation (dB),EQ Suggestion\n';
+        let csv = 'Band,Frequency (Hz),Average Power (dB),Range,Deviation (dB),EQ Suggestion\n';
         
         recommendations.forEach(rec => {
             const bandData = analysis.bands[rec.band];

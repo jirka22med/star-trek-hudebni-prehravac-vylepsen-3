@@ -787,16 +787,17 @@ class ToneMeter {
     <meta charset="UTF-8">
     <title>ToneMeter Mastering Report</title>
     <style>
-        body { font-family: 'Courier New', monospace; background: #0b0d10; color: #e0e0e0; margin: 20px; }
+        /* UPRAVENO: Bílé písmo jako výchozí pro maximální kontrast */
+        body { font-family: 'Courier New', monospace; background: #0b0d10; color: #ffffff; margin: 20px; }
         h1 { color: #00ff88; border-bottom: 2px solid #00ff88; padding-bottom: 10px; }
         h2 { color: #0088ff; margin-top: 30px; }
-        .meta { color: #888; margin-bottom: 20px; font-size: 0.9em; }
+        .meta { color: #aaaaaa; margin-bottom: 20px; font-size: 0.9em; }
         table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.9em; }
-        th, td { border: 1px solid #333; padding: 8px; text-align: left; }
+        th, td { border: 1px solid #333; padding: 8px; text-align: left; color: #ffffff; }
         th { background: #1a1d23; color: #0088ff; }
         tr:nth-child(even) { background: #111418; }
         tr:hover { background: #1f242b; }
-        .val-bad { color: #ff4444; }
+        .val-bad { color: #ff4444; font-weight: bold; }
         .val-ok { color: #00ff88; }
         .val-warn { color: #ffaa00; }
         .timeline-container { height: 500px; overflow-y: scroll; border: 1px solid #333; margin-top: 10px; }
@@ -842,7 +843,7 @@ class ToneMeter {
     </table>
 
     <h2>2. Detailní Časová Osa (Timeline)</h2>
-    <p style="font-size:0.8em; color:#888;">Záznam všech 8 pásem v čase (interval ~0.1s)</p>
+    <p style="font-size:0.8em; color:#aaaaaa;">Záznam všech 8 pásem v čase (interval ~0.1s)</p>
     <div class="timeline-container">
         <table>
             <thead>
@@ -864,10 +865,18 @@ class ToneMeter {
             html += `<tr><td>${time}</td>`;
             bandNames.forEach(name => {
                 const val = analysis.rawHistory[name][i] || -100;
-                // Obarvit silné/slabé hodnoty pro rychlý přehled
-                let style = '';
-                if (val > -10) style = 'color:#ff4444'; // clipping/loud
-                else if (val < -60) style = 'color:#555'; // quiet
+                
+                // UPRAVENO: Barvy podle hodnot pro lepší čitelnost
+                let style = 'color: #ffffff;'; // Výchozí bílá (ticho/neutrál)
+                
+                if (val > -10) {
+                    style = 'color:#ff4444; font-weight:bold;'; // ČERVENÁ - Moc nahlas / Clipping
+                } else if (val > -60) {
+                    style = 'color:#00ff88;'; // ZELENÁ - Dobrý signál
+                } else {
+                    style = 'color:#ffffff; opacity: 0.7;'; // BÍLÁ - Ticho/Pozadí
+                }
+                
                 html += `<td style="${style}">${val.toFixed(1)}</td>`;
             });
             html += `</tr>`;
